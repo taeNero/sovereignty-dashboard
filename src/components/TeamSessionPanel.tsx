@@ -11,23 +11,86 @@ interface TeamSessionPanelProps {
   allMetrics?: Record<string, string>
 }
 
-function buildCouncilPrompt(briefing: string, allMetrics: Record<string, string>): string {
-  const sections = FOUR_GUARDIANS.map(g => {
+const COUNCIL_BRIEFING_URL = 'https://diamond-protocol-server-production.up.railway.app/api/council-briefing'
+
+// Fetch live Guardian intelligence from Railway / Supabase
+async function fetchLiveBriefing(): Promise<string> {
+  try {
+    const res = await fetch(COUNCIL_BRIEFING_URL)
+    const data = await res.json()
+    const b = data.briefing
+    if (!b) return ''
+
+    const gm = b.guardian_metrics || {}
+
+    return `
+=== LIVE GUARDIAN INTELLIGENCE (from Supabase) ===
+Generated: ${b.generated_at}
+
+--- KAEL (Performance & Energy) ---
+Energy Score: ${gm.kael?.energy_score?.value ?? 'N/A'}/100
+Summary: ${gm.kael?.energy_score?.summary ?? 'No data'}
+
+--- SIRYANDORIN (Revenue & Leverage) ---
+Revenue Leverage: ${gm.siryandorin?.revenue_leverage?.value ?? 'N/A'}/100
+Conversion Rate: ${gm.siryandorin?.conversion_rate?.value ?? 'N/A'}%
+Summary: ${gm.siryandorin?.revenue_leverage?.summary ?? 'No data'}
+
+--- ANANSI (Brand & Community) ---
+Narrative Density: ${gm.anansi?.narrative_density?.value ?? 'N/A'}/100
+Summary: ${gm.anansi?.narrative_density?.summary ?? 'No data'}
+
+--- AURIXEN (Strategy & Risk) ---
+Risk Index: ${gm.aurixen?.risk_index?.value ?? 'N/A'}/100
+Opportunity Score: ${gm.aurixen?.opportunity_score?.value ?? 'N/A'}/100
+Summary: ${gm.aurixen?.risk_index?.summary ?? 'No data'}
+
+=== PIPELINE ===
+Total Leads: ${b.pipeline?.total_leads ?? 0}
+Paying Clients: ${b.pipeline?.total_paying_clients ?? 0}
+Recent Intakes: ${(b.pipeline?.recent_intakes ?? []).join(', ') || 'None'}
+
+=== REVENUE ===
+Recent Orders: ${b.revenue?.recent_orders ?? 0}
+Total Revenue: $${b.revenue?.total_recent_revenue ?? 0}
+
+=== ENGAGEMENT ===
+Recent Events: ${b.engagement?.recent_events ?? 0}
+Latest Rank Event: ${b.engagement?.latest_rank_event?.username ?? 'None'} → ${b.engagement?.latest_rank_event?.rank_level ?? 'N/A'}
+`.trim()
+  } catch {
+    return ''
+  }
+}
+
+async function buildCouncilPrompt(briefing: string, allMetrics: Record<string, string>): Promise<string> {
+  const liveBriefing = await fetchLiveBriefing()
+
+  // Manually entered metrics as supplemental context
+  const manualSections = FOUR_GUARDIANS.map(g => {
     const lines = g.metrics
       .filter(f => allMetrics[f.key])
       .map(f => `  - ${f.label}: ${allMetrics[f.key]}${f.unit ? ' ' + f.unit : ''}`)
       .join('\n')
-    return `${g.name} (${g.domain}):\n${lines || '  (no data entered)'}`
-  }).join('\n\n')
+    return lines ? `${g.name} (${g.domain}):\n${lines}` : null
+  }).filter(Boolean).join('\n\n')
+
+  const manualContext = manualSections
+    ? `\n\n=== MANUALLY ENTERED METRICS ===\n${manualSections}`
+    : ''
 
   const focusLine = briefing.trim()
     ? `Council focus: ${briefing.trim()}\n\n`
     : ''
 
+  const dataBlock = liveBriefing
+    ? `${liveBriefing}${manualContext}`
+    : manualContext || '  (no data available)'
+
   return (
     `${focusLine}` +
     `You are The Angel, Executive Synthesiser of the Diamond Protocol. ` +
-    `The four Guardians have reported their domain metrics:\n\n${sections}\n\n` +
+    `Below is the live intelligence from your four Guardians:\n\n${dataBlock}\n\n` +
     `Synthesize cross-domain patterns, identify the single highest-leverage action across all domains, ` +
     `flag any critical risks or conflicts between domains, and deliver your executive directive for this week.`
   )
@@ -47,7 +110,7 @@ export default function TeamSessionPanel({ allMetrics = {} }: TeamSessionPanelPr
 
     const flowiseBase = process.env.NEXT_PUBLIC_FLOWISE_BASE_URL?.replace(/\/$/, '')
     const flowiseKey  = process.env.NEXT_PUBLIC_FLOWISE_API_KEY
-    const question    = buildCouncilPrompt(briefing, allMetrics)
+    const question    = await buildCouncilPrompt(briefing, allMetrics)
 
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
