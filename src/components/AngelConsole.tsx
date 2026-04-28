@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Sparkles } from 'lucide-react'
 import { GUARDIAN_MAP, FOUR_GUARDIANS } from '../data/guardians'
@@ -82,9 +82,17 @@ async function buildSynthesisPrompt(allMetrics: Record<string, string>): Promise
 }
 
 export default function AngelConsole({ allMetrics }: AngelConsoleProps) {
-  const [trigger, setTrigger] = useState<string | undefined>(undefined)
-  const [loading, setLoading] = useState(false)
+  const [trigger, setTrigger]           = useState<string | undefined>(undefined)
+  const [loading, setLoading]           = useState(false)
+  const [liveContext, setLiveContext]   = useState<string | undefined>(undefined)
   const angel = GUARDIAN_MAP['angel']
+
+  // Fetch live briefing once on mount — injected into every chat message
+  useEffect(() => {
+    fetchCouncilBriefing().then(ctx => {
+      if (ctx && !ctx.startsWith('⚠️')) setLiveContext(ctx)
+    })
+  }, [])
 
   async function handleRunSynthesis() {
     setLoading(true)
@@ -160,6 +168,7 @@ export default function AngelConsole({ allMetrics }: AngelConsoleProps) {
           flowiseId={angel.flowiseId}
           triggerMessage={trigger}
           onTriggerConsumed={() => setTrigger(undefined)}
+          systemContext={liveContext}
           placeholder="Ask The Angel for executive direction…"
           height={300}
         />

@@ -42,6 +42,13 @@ export interface ChatWindowProps {
   triggerMessage?: string
   onTriggerConsumed?: () => void
 
+  /**
+   * Live intelligence context prepended silently to EVERY outgoing message.
+   * The user bubble still shows only their original message.
+   * Used by AngelConsole to inject the Railway briefing into every chat.
+   */
+  systemContext?: string
+
   placeholder?: string
   height?: number
 }
@@ -58,6 +65,7 @@ export default function ChatWindow({
   onPrefillConsumed,
   triggerMessage,
   onTriggerConsumed,
+  systemContext,
   placeholder = 'Ask your guardian…',
   height = 400,
 }: ChatWindowProps) {
@@ -106,6 +114,12 @@ export default function ChatWindow({
   async function sendMessage(question: string, showUserBubble: boolean) {
     const loadingId = `loading-${Date.now()}`
 
+    // Silently prepend live context to every outgoing message if provided.
+    // The user-facing bubble still shows only their original question.
+    const payload = systemContext
+      ? `${systemContext}\n\n---\n\n${question}`
+      : question
+
     setMessages(prev => {
       const withUser = showUserBubble
         ? [...prev, { id: `u-${Date.now()}`, role: 'user' as const, content: question }]
@@ -131,7 +145,7 @@ export default function ChatWindow({
         const res = await fetch(`${flowiseBase}/${flowiseId}`, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ question }),
+          body: JSON.stringify({ question: payload }),
           signal: controller.signal,
         })
         clearTimeout(timeoutId)
