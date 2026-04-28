@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-global: #08081a;
+  --color-kael: #22c55e;
+  --color-siryandorin: #eab308;
+  --color-anansi: #3b82f6;
+  --color-aurixen: #a855f7;
+  --color-angel: #f8fafc;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  background-color: var(--bg-global);
+  color: #f8fafc;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Global background with radial gradients */
+#root {
+  background-color: #08081a;
+  background-image:
+    radial-gradient(ellipse 60% 40% at 20% 80%, rgba(168, 85, 247, 0.20) 0%, transparent 70%),
+    radial-gradient(ellipse 80% 60% at 80% 20%, rgba(59, 130, 246, 0.12) 0%, transparent 70%);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.03);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.12);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+/* Prose / markdown styling */
+.prose-dark {
+  color: rgba(248,250,252,0.85);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+.prose-dark h1, .prose-dark h2, .prose-dark h3 {
+  color: #f8fafc;
+  font-weight: 600;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+.prose-dark p { margin-bottom: 0.75rem; }
+.prose-dark ul, .prose-dark ol { padding-left: 1.25rem; margin-bottom: 0.75rem; }
+.prose-dark li { margin-bottom: 0.25rem; }
+.prose-dark code {
+  background: rgba(255,255,255,0.08);
+  padding: 0.1em 0.3em;
+  border-radius: 3px;
+  font-size: 0.8em;
+}
+.prose-dark strong { color: #f8fafc; }
